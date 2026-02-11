@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\AboutSectionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -23,6 +24,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/hero-section/{id}/edit', [App\Http\Controllers\HeroSectionController::class, 'edit'])->name('hero.edit');
     Route::put('/hero-section/{id}', [App\Http\Controllers\HeroSectionController::class, 'update'])->name('hero.update');
     Route::delete('/hero-section/{id}', [App\Http\Controllers\HeroSectionController::class, 'destroy'])->name('hero.destroy');
+
+    Route::prefix('about')->name('about.')->group(function () {
+
+    Route::get('/', [AboutSectionController::class,'index'])->name('index');
+    Route::get('/create', [AboutSectionController::class,'create'])->name('create');
+    Route::post('/store', [AboutSectionController::class,'store'])->name('store');
+    Route::get('/edit/{id}', [AboutSectionController::class,'edit'])->name('edit');
+    Route::put('/update/{id}', [AboutSectionController::class,'update'])->name('update');
+    Route::delete('/delete/{id}', [AboutSectionController::class,'destroy'])->name('destroy');
+
+});
+
 });
 
 require __DIR__ . '/auth.php';
