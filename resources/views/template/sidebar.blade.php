@@ -7,6 +7,13 @@
         </a>
     </li>
 
+    <li class="menu-item">
+        <a href="{{ route('product.index') }}" class="menu-link">
+            <i class="menu-icon tf-icons bx bx-package"></i>
+            <div data-i18n="Products">Data Produk</div>
+        </a>
+    </li>
+
     <li class="menu-header small text-uppercase">
         <span class="menu-header-text">Halaman Homepage</span>
     </li>
