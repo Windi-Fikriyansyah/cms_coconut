@@ -59,6 +59,17 @@ Route::prefix('quality')->name('quality.')->group(function () {
 
 });
 
+Route::prefix('gallery')->name('gallery.')->group(function () {
+
+    Route::get('/', [App\Http\Controllers\GalleryController::class,'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\GalleryController::class,'create'])->name('create');
+    Route::post('/store', [App\Http\Controllers\GalleryController::class,'store'])->name('store');
+    Route::get('/edit/{id}', [App\Http\Controllers\GalleryController::class,'edit'])->name('edit');
+    Route::put('/update/{id}', [App\Http\Controllers\GalleryController::class,'update'])->name('update');
+    Route::delete('/delete/{id}', [App\Http\Controllers\GalleryController::class,'destroy'])->name('destroy');
+
+});
+
 });
 
 require __DIR__ . '/auth.php';
