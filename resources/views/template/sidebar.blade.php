@@ -37,6 +37,13 @@
                     <div data-i18n="Hero Section">About Section</div>
                 </a>
             </li>
+
+            <li class="menu-item">
+                <a href="{{ route('quality.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-image"></i>
+                    <div data-i18n="Hero Section">Quality Section</div>
+                </a>
+            </li>
         </ul>
     </li>
 

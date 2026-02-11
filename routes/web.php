@@ -48,6 +48,17 @@ Route::prefix('product')->name('product.')->group(function () {
 
 });
 
+Route::prefix('quality')->name('quality.')->group(function () {
+
+    Route::get('/', [App\Http\Controllers\QualityController::class,'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\QualityController::class,'create'])->name('create');
+    Route::post('/store', [App\Http\Controllers\QualityController::class,'store'])->name('store');
+    Route::get('/edit/{id}', [App\Http\Controllers\QualityController::class,'edit'])->name('edit');
+    Route::put('/update/{id}', [App\Http\Controllers\QualityController::class,'update'])->name('update');
+    Route::delete('/delete/{id}', [App\Http\Controllers\QualityController::class,'destroy'])->name('destroy');
+
+});
+
 });
 
 require __DIR__ . '/auth.php';
