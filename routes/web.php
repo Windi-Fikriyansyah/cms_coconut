@@ -103,6 +103,19 @@ Route::prefix('footer')->name('footer.')->group(function () {
 
 });
 
+Route::prefix('blog')->name('blog.')->group(function () {
+
+    Route::get('/', [App\Http\Controllers\BlogController::class,'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\BlogController::class,'create'])->name('create');
+    Route::post('/store', [App\Http\Controllers\BlogController::class,'store'])->name('store');
+    Route::get('/edit/{id}', [App\Http\Controllers\BlogController::class,'edit'])->name('edit');
+    Route::put('/update/{id}', [App\Http\Controllers\BlogController::class,'update'])->name('update');
+    Route::delete('/delete/{id}', [App\Http\Controllers\BlogController::class,'destroy'])->name('destroy');
+    // AI Generation Route
+    Route::post('/generate', [App\Http\Controllers\BlogController::class,'generate'])->name('generate');
+
+});
+
 Route::prefix('why_choose')->name('why_choose.')->group(function () {
 
     Route::get('/', [App\Http\Controllers\WhyChooseController::class,'index'])->name('index');
