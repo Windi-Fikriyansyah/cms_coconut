@@ -21,6 +21,8 @@
         </a>
     </li>
 
+    
+
     <li class="menu-header small text-uppercase">
         <span class="menu-header-text">Halaman Homepage</span>
     </li>
@@ -87,6 +89,15 @@
             </li>
         </ul>
     </li>
+
+    <li class="menu-item">
+        <a href="{{ route('about-page.index') }}" class="menu-link">
+            <i class="menu-icon tf-icons bx bx-package"></i>
+            <div data-i18n="Products">About Page</div>
+        </a>
+    </li>
+
+    
 
 
 

@@ -37,6 +37,15 @@ Route::middleware('auth')->group(function () {
 
 });
 
+    Route::prefix('about')->name('about-page.')->group(function () {
+        Route::get('/page', [App\Http\Controllers\AboutPageController::class, 'index'])->name('index');
+        Route::get('/page/create', [App\Http\Controllers\AboutPageController::class, 'create'])->name('create');
+        Route::post('/page/store', [App\Http\Controllers\AboutPageController::class, 'store'])->name('store');
+        Route::get('/page/edit/{id}', [App\Http\Controllers\AboutPageController::class, 'edit'])->name('edit');
+        Route::put('/page/update/{id}', [App\Http\Controllers\AboutPageController::class, 'update'])->name('update');
+        Route::delete('/page/delete/{id}', [App\Http\Controllers\AboutPageController::class, 'destroy'])->name('destroy');
+    });
+
 Route::prefix('product')->name('product.')->group(function () {
 
     Route::get('/', [ProductController::class,'index'])->name('index');
