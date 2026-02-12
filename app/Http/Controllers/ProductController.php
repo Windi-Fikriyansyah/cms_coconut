@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
-use Illuminate\Support\Facades\Http;
 
 class ProductController extends Controller
 {
@@ -72,24 +71,6 @@ class ProductController extends Controller
         }
 
         return view('product.index');
-    }
-    private function triggerRevalidate($path = '/products')
-    {
-        try {
-            $baseUrl = env('NEXT_PUBLIC_URL', 'http://localhost:3000');
-            $secret = env('REVALIDATE_SECRET', 'coco_prime_secret_2024');
-            $response = Http::post("{$baseUrl}/api/revalidate", [
-                'secret' => $secret,
-                'path'   => $path
-            ]);
-            if ($response->successful()) {
-                Log::info("Revalidation success for path: {$path}");
-            } else {
-                Log::error("Revalidation failed for path: {$path}. Status: " . $response->status());
-            }
-        } catch (\Exception $e) {
-            Log::error("Webhook error: " . $e->getMessage());
-        }
     }
 
     /**
@@ -178,8 +159,6 @@ class ProductController extends Controller
                     ]);
                 }
             }
-
-            $this->triggerRevalidate('/products');
 
             return redirect()->route('product.index')->with('success', 'Product created successfully');
         } catch (\Exception $e) {
@@ -346,8 +325,6 @@ class ProductController extends Controller
                 }
             }
 
-            $this->triggerRevalidate('/products');
-            $this->triggerRevalidate("/products/{$slug}");
             return redirect()->route('product.index')->with('success', 'Product updated successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
@@ -388,7 +365,7 @@ class ProductController extends Controller
 
         DB::table('product_details')->where('product_id', $id)->delete();
         DB::table('products')->where('id', $id)->delete();
-        $this->triggerRevalidate('/products');
+
         return response()->json([
             'success' => true,
             'message' => 'Product deleted!'
