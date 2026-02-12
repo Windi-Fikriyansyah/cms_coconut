@@ -213,9 +213,7 @@ class BlogController extends Controller
         ]);
     }
 
-    /**
-     * GENERATE CONTENT (AJAX)
-     */
+    
     public function generate(Request $request)
     {
         $request->validate([
