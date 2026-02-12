@@ -39,18 +39,19 @@ return [
         ],
 
         'nextjs' => [
-    'driver' => 'local',
-    // Gunakan double backslash
-    'root' => 'D:\\global-coco-prime\\public\\uploads', 
-    // ATAU gunakan forward slash (disarankan)
-    // 'root' => 'D:/global-coco-prime/public/uploads', 
-    'url' => env('NEXT_PUBLIC_URL') . '/uploads',
-    'visibility' => 'public',
-],
+            'driver' => 'local',
+            // Gunakan double backslash
+            // 'root' => 'D:\\global-coco-prime\\public\\uploads',
+            'root' => '/var/www/coconut/public/uploads',
+            // ATAU gunakan forward slash (disarankan)
+            // 'root' => 'D:/global-coco-prime/public/uploads',
+            'url' => env('NEXT_PUBLIC_URL') . '/uploads',
+            'visibility' => 'public',
+        ],
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/') . '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
