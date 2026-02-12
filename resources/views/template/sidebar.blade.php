@@ -64,6 +64,20 @@
                     <div data-i18n="Hero Section">Certifikat Section</div>
                 </a>
             </li>
+
+            <li class="menu-item">
+                <a href="{{ route('contact.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-image"></i>
+                    <div data-i18n="Hero Section">Contact Section</div>
+                </a>
+            </li>
+
+            <li class="menu-item">
+                <a href="{{ route('footer.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-image"></i>
+                    <div data-i18n="Hero Section">Footer Section</div>
+                </a>
+            </li>
         </ul>
     </li>
 

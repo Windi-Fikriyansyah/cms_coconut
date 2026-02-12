@@ -81,6 +81,28 @@ Route::prefix('certificate')->name('certificate.')->group(function () {
 
 });
 
+Route::prefix('contact')->name('contact.')->group(function () {
+
+    Route::get('/', [App\Http\Controllers\ContactController::class,'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\ContactController::class,'create'])->name('create');
+    Route::post('/store', [App\Http\Controllers\ContactController::class,'store'])->name('store');
+    Route::get('/edit/{id}', [App\Http\Controllers\ContactController::class,'edit'])->name('edit');
+    Route::put('/update/{id}', [App\Http\Controllers\ContactController::class,'update'])->name('update');
+    Route::delete('/delete/{id}', [App\Http\Controllers\ContactController::class,'destroy'])->name('destroy');
+
+});
+
+Route::prefix('footer')->name('footer.')->group(function () {
+
+    Route::get('/', [App\Http\Controllers\FooterController::class,'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\FooterController::class,'create'])->name('create');
+    Route::post('/store', [App\Http\Controllers\FooterController::class,'store'])->name('store');
+    Route::get('/edit/{id}', [App\Http\Controllers\FooterController::class,'edit'])->name('edit');
+    Route::put('/update/{id}', [App\Http\Controllers\FooterController::class,'update'])->name('update');
+    Route::delete('/delete/{id}', [App\Http\Controllers\FooterController::class,'destroy'])->name('destroy');
+
+});
+
 Route::prefix('why_choose')->name('why_choose.')->group(function () {
 
     Route::get('/', [App\Http\Controllers\WhyChooseController::class,'index'])->name('index');
