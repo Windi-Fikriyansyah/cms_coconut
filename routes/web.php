@@ -70,6 +70,28 @@ Route::prefix('gallery')->name('gallery.')->group(function () {
 
 });
 
+Route::prefix('certificate')->name('certificate.')->group(function () {
+
+    Route::get('/', [App\Http\Controllers\CertificateController::class,'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\CertificateController::class,'create'])->name('create');
+    Route::post('/store', [App\Http\Controllers\CertificateController::class,'store'])->name('store');
+    Route::get('/edit/{id}', [App\Http\Controllers\CertificateController::class,'edit'])->name('edit');
+    Route::put('/update/{id}', [App\Http\Controllers\CertificateController::class,'update'])->name('update');
+    Route::delete('/delete/{id}', [App\Http\Controllers\CertificateController::class,'destroy'])->name('destroy');
+
+});
+
+Route::prefix('why_choose')->name('why_choose.')->group(function () {
+
+    Route::get('/', [App\Http\Controllers\WhyChooseController::class,'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\WhyChooseController::class,'create'])->name('create');
+    Route::post('/store', [App\Http\Controllers\WhyChooseController::class,'store'])->name('store');
+    Route::get('/edit/{id}', [App\Http\Controllers\WhyChooseController::class,'edit'])->name('edit');
+    Route::put('/update/{id}', [App\Http\Controllers\WhyChooseController::class,'update'])->name('update');
+    Route::delete('/delete/{id}', [App\Http\Controllers\WhyChooseController::class,'destroy'])->name('destroy');
+
+});
+
 });
 
 require __DIR__ . '/auth.php';

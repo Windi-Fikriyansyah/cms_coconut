@@ -1,16 +1,16 @@
 @extends('template.app')
-@section('title', 'Quality Commitment')
+@section('title', 'Why Choose')
 @section('content')
     <div class="page-heading">
         <div class="row">
             <div class="col-12 col-md-6 order-md-1 order-last">
-                <h3>Quality Commitment</h3>
+                <h3>Why Choose</h3>
             </div>
             <div class="col-12 col-md-6 order-md-2 order-first">
                 <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Quality Team</li>
+                        <li class="breadcrumb-item active" aria-current="page">Why Choose Team</li>
                     </ol>
                 </nav>
             </div>
@@ -37,9 +37,9 @@
         <div class="card radius-10">
             <div class="card-header">
                 <div class="d-flex align-items-center justify-content-between">
-                    <h5 class="card-title mb-0">Daftar Quality Section</h5>
+                    <h5 class="card-title mb-0">Daftar Why Choose Section</h5>
                     @if($count == 0)
-                        <a href="{{ route('quality.create') }}" class="btn btn-primary">Tambah Section</a>
+                        <a href="{{ route('why_choose.create') }}" class="btn btn-primary">Tambah Section</a>
                     @endif
                 </div>
             </div>
@@ -82,7 +82,7 @@
             const table = $('#quality-table').DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: "{{ route('quality.index') }}",
+                ajax: "{{ route('why_choose.index') }}",
                 columns: [
                     { data: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'images', orderable: false, searchable: false },

@@ -1,23 +1,22 @@
 @extends('template.app')
-@section('title', 'Quality Commitment')
+@section('title', 'Certificates')
 @section('content')
     <div class="page-heading">
         <div class="row">
             <div class="col-12 col-md-6 order-md-1 order-last">
-                <h3>Quality Commitment</h3>
+                <h3>Certificates</h3>
             </div>
             <div class="col-12 col-md-6 order-md-2 order-first">
                 <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Quality Team</li>
+                        <li class="breadcrumb-item active" aria-current="page">Certificates</li>
                     </ol>
                 </nav>
             </div>
         </div>
     </div>
     <div class="page-content">
-
         @if (session('success'))
             <div class="alert alert-success alert-dismissible" role="alert">
                 <i class="bx bx-check-circle me-2"></i>
@@ -25,7 +24,6 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         @endif
-
         @if (session('error'))
             <div class="alert alert-danger alert-dismissible" role="alert">
                 <i class="bx bx-x-circle me-2"></i>
@@ -33,24 +31,23 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         @endif
-
         <div class="card radius-10">
             <div class="card-header">
                 <div class="d-flex align-items-center justify-content-between">
-                    <h5 class="card-title mb-0">Daftar Quality Section</h5>
-                    @if($count == 0)
-                        <a href="{{ route('quality.create') }}" class="btn btn-primary">Tambah Section</a>
-                    @endif
+                    <h5 class="card-title mb-0">List Certificates</h5>
+                    <a href="{{ route('certificate.create') }}" class="btn btn-primary">Tambah Certificate</a>
                 </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table align-middle mb-0" id="quality-table" style="width: 100%">
+                    <table class="table align-middle mb-0" id="certificate-table" style="width: 100%">
                         <thead class="table-light">
                             <tr>
                                 <th>No</th>
-                                <th>Section Images</th>
-                                <th>Items Count</th>
+                                <th>Logo</th>
+                                <th>Title</th>
+                                <th>Order</th>
+                                <th>Created At</th>
                                 <th width="15%">Aksi</th>
                             </tr>
                         </thead>
@@ -61,12 +58,10 @@
         </div>
     </div>
 @endsection
-
 @push('css')
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
 @endpush
-
 @push('js')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
@@ -74,36 +69,31 @@
     <script>
         $(document).ready(function() {
             $.ajaxSetup({
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                }
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
             });
-
-            const table = $('#quality-table').DataTable({
+            const table = $('#certificate-table').DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: "{{ route('quality.index') }}",
+                ajax: "{{ route('certificate.index') }}",
                 columns: [
                     { data: 'DT_RowIndex', orderable: false, searchable: false },
-                    { data: 'images', orderable: false, searchable: false },
-                    { data: 'items_count', searchable: false },
+                    { data: 'image', orderable: false, searchable: false },
+                    { data: 'title', name: 'title' },
+                    { data: 'display_order', name: 'display_order' },
+                    { data: 'created_at', name: 'created_at' },
                     { data: 'action', orderable: false, searchable: false }
                 ],
             });
-
-            // Delete action
             $(document).on('click', '.delete-btn', function() {
                 const url = $(this).data('url');
-
                 Swal.fire({
-                    title: 'Apakah Anda yakin?',
-                    text: "Data quality section dan semua item items akan dihapus permanen!",
+                    title: 'Are you sure?',
+                    text: "You won't be able to revert this!",
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
                     cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Ya, hapus!',
-                    cancelButtonText: 'Batal'
+                    confirmButtonText: 'Yes, delete it!'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         $.ajax({
@@ -111,21 +101,12 @@
                             type: 'DELETE',
                             success: function(response) {
                                 if (response.success) {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Sukses',
-                                        text: response.message
-                                    });
-                                    // table.ajax.reload();
-                                    location.reload();
+                                    Swal.fire('Deleted!', response.message, 'success');
+                                    table.ajax.reload();
                                 }
                             },
                             error: function(xhr) {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Gagal',
-                                    text: xhr.responseJSON?.message || 'Terjadi kesalahan'
-                                });
+                                Swal.fire('Error!', xhr.responseJSON?.message || 'Something went wrong', 'error');
                             }
                         });
                     }
