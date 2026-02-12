@@ -30,7 +30,7 @@ class ProductController extends Controller
                         str_replace('/uploads/', '', $row->image)
                     );
 
-                    return '<img src="'.$url.'" style="height:50px;border-radius:6px;">';
+                    return '<img src="' . $url . '" style="height:50px;border-radius:6px;">';
                 })
 
                 ->addColumn('why_points_display', function ($row) {
@@ -41,10 +41,10 @@ class ProductController extends Controller
 
                     $html = '<ul class="mb-0 ps-3" style="font-size:12px;">';
                     foreach (array_slice($points, 0, 2) as $point) {
-                        $html .= '<li>'.e($point).'</li>';
+                        $html .= '<li>' . e($point) . '</li>';
                     }
                     if (count($points) > 2) {
-                        $html .= '<li>... +'.(count($points) - 2).' lagi</li>';
+                        $html .= '<li>... +' . (count($points) - 2) . ' lagi</li>';
                     }
                     $html .= '</ul>';
 
@@ -54,12 +54,12 @@ class ProductController extends Controller
                 ->addColumn('action', function ($row) {
                     return '
                         <div class="btn-group">
-                            <a href="'.route('product.edit', $row->id).'" class="btn btn-sm btn-info">
+                            <a href="' . route('product.edit', $row->id) . '" class="btn btn-sm btn-info">
                                 <i class="bi bi-pencil-square"></i>
                             </a>
 
                             <button class="btn btn-sm btn-danger delete-btn"
-                                data-url="'.route('product.destroy', $row->id).'">
+                                data-url="' . route('product.destroy', $row->id) . '">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
@@ -114,9 +114,9 @@ class ProductController extends Controller
             $imagePath = null;
             if ($request->hasFile('image')) {
                 $file = $request->file('image');
-                $name = time().'_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                Storage::disk('nextjs')->putFileAs('', $file, $name);
-                $imagePath = '/uploads/'.$name;
+                $name = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('uploads', $name, 'public');
+                $imagePath = '/storage/uploads/' . $name;
             }
 
             // Why points — filter empty
@@ -142,9 +142,9 @@ class ProductController extends Controller
                     $detailImgs = [];
                     if ($request->hasFile("detail_images.$idx")) {
                         foreach ($request->file("detail_images.$idx") as $file) {
-                            $name = time().'_'.Str::random(8).'.'.$file->getClientOriginalExtension();
+                            $name = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
                             Storage::disk('nextjs')->putFileAs('', $file, $name);
-                            $detailImgs[] = ['url' => '/uploads/'.$name];
+                            $detailImgs[] = ['url' => '/uploads/' . $name];
                         }
                     }
 
@@ -159,10 +159,9 @@ class ProductController extends Controller
             }
 
             return redirect()->route('product.index')->with('success', 'Product created successfully');
-
         } catch (\Exception $e) {
             Log::error($e->getMessage());
-            return back()->with('error', 'Failed to create product: '.$e->getMessage());
+            return back()->with('error', 'Failed to create product: ' . $e->getMessage());
         }
     }
 
@@ -229,9 +228,9 @@ class ProductController extends Controller
                 }
 
                 $file = $request->file('image');
-                $name = time().'_'.Str::random(8).'.'.$file->getClientOriginalExtension();
+                $name = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
                 Storage::disk('nextjs')->putFileAs('', $file, $name);
-                $data['image'] = '/uploads/'.$name;
+                $data['image'] = '/uploads/' . $name;
             }
 
             // Why points
@@ -301,9 +300,9 @@ class ProductController extends Controller
 
                         $detailImgs = [];
                         foreach ($request->file("detail_images.$idx") as $file) {
-                            $name = time().'_'.Str::random(8).'.'.$file->getClientOriginalExtension();
+                            $name = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
                             Storage::disk('nextjs')->putFileAs('', $file, $name);
-                            $detailImgs[] = ['url' => '/uploads/'.$name];
+                            $detailImgs[] = ['url' => '/uploads/' . $name];
                         }
                     }
 
@@ -324,10 +323,9 @@ class ProductController extends Controller
             }
 
             return redirect()->route('product.index')->with('success', 'Product updated successfully');
-
         } catch (\Exception $e) {
             Log::error($e->getMessage());
-            return back()->with('error', 'Failed to update product: '.$e->getMessage());
+            return back()->with('error', 'Failed to update product: ' . $e->getMessage());
         }
     }
 
