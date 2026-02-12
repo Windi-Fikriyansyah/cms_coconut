@@ -131,6 +131,8 @@ class ProductController extends Controller
                 'why_points'       => json_encode($whyPoints),
                 'meta_title'       => $request->meta_title,
                 'meta_description' => $request->meta_description,
+                'updated_at'      => now(),
+                'created_at'      => now(),
             ]);
 
             // Insert product details
@@ -215,6 +217,7 @@ class ProductController extends Controller
                 'short_description'            => $request->short_description,
                 'meta_title'       => $request->meta_title,
                 'meta_description' => $request->meta_description,
+                'updated_at'      => now(),
             ];
 
             // Upload new product image
