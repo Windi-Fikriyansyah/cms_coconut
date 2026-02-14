@@ -105,16 +105,19 @@ Route::prefix('certificate')->name('certificate.')->group(function () {
 
 Route::prefix('message')->name('message.')->group(function () {
     Route::get('/', [App\Http\Controllers\ContactMessageController::class, 'index'])->name('index');
+    Route::get('/{id}', [App\Http\Controllers\ContactMessageController::class, 'show'])->name('show');
     Route::delete('/delete/{id}', [App\Http\Controllers\ContactMessageController::class, 'destroy'])->name('destroy');
 });
 
 Route::prefix('sample')->name('sample.')->group(function () {
     Route::get('/', [App\Http\Controllers\SampleController::class, 'index'])->name('index');
+    Route::get('/{id}', [App\Http\Controllers\SampleController::class, 'show'])->name('show');
     Route::delete('/delete/{id}', [App\Http\Controllers\SampleController::class, 'destroy'])->name('destroy');
 });
 
 Route::prefix('quote')->name('quote.')->group(function () {
     Route::get('/', [App\Http\Controllers\QuoteController::class, 'index'])->name('index');
+    Route::get('/{id}', [App\Http\Controllers\QuoteController::class, 'show'])->name('show');
     Route::delete('/delete/{id}', [App\Http\Controllers\QuoteController::class, 'destroy'])->name('destroy');
 });
 

@@ -28,6 +28,9 @@ class QuoteController extends Controller
                 ->addColumn('action', function ($row) {
                     return '
                         <div class="btn-group">
+                            <a href="'.route('quote.show', $row->id).'" class="btn btn-sm btn-info">
+                                <i class="bi bi-eye"></i>
+                            </a>
                             <button class="btn btn-sm btn-danger delete-btn" data-url="'.route('quote.destroy', $row->id).'">
                                 <i class="bi bi-trash"></i>
                             </button>
@@ -39,6 +42,16 @@ class QuoteController extends Controller
         }
 
         return view('quotes.index');
+    }
+
+    public function show($id)
+    {
+        $quote = DB::table('quotes')->where('id', $id)->first();
+        if (!$quote) abort(404);
+
+        
+
+        return view('quotes.show', compact('quote'));
     }
 
     public function destroy($id)

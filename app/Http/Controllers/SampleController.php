@@ -28,6 +28,9 @@ class SampleController extends Controller
                 ->addColumn('action', function ($row) {
                     return '
                         <div class="btn-group">
+                            <a href="'.route('sample.show', $row->id).'" class="btn btn-sm btn-info">
+                                <i class="bi bi-eye"></i>
+                            </a>
                             <button class="btn btn-sm btn-danger delete-btn" data-url="'.route('sample.destroy', $row->id).'">
                                 <i class="bi bi-trash"></i>
                             </button>
@@ -39,6 +42,20 @@ class SampleController extends Controller
         }
 
         return view('samples.index');
+    }
+
+    public function show($id)
+    {
+        $sample = DB::table('samples')->where('id', $id)->first();
+        if (!$sample) abort(404);
+
+        if ($sample->status === 'pending') {
+            // Optional: automatically update status or keep it manual? 
+            // Usually valid requests might stay pending until processed.
+            // Let's just view it for now.
+        }
+
+        return view('samples.show', compact('sample'));
     }
 
     public function destroy($id)

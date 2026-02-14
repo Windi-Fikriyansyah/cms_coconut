@@ -21,6 +21,9 @@ class ContactMessageController extends Controller
                 ->addColumn('action', function ($row) {
                     return '
                         <div class="btn-group">
+                            <a href="'.route('message.show', $row->id).'" class="btn btn-sm btn-info">
+                                <i class="bi bi-eye"></i>
+                            </a>
                             <button class="btn btn-sm btn-danger delete-btn" data-url="'.route('message.destroy', $row->id).'">
                                 <i class="bi bi-trash"></i>
                             </button>
@@ -32,6 +35,18 @@ class ContactMessageController extends Controller
         }
 
         return view('contact_messages.index');
+    }
+
+    public function show($id)
+    {
+        $message = DB::table('contact_messages')->where('id', $id)->first();
+        if (!$message) abort(404);
+
+        if ($message->status === 'unread') {
+            DB::table('contact_messages')->where('id', $id)->update(['status' => 'read']);
+        }
+
+        return view('contact_messages.show', compact('message'));
     }
 
     public function destroy($id)
