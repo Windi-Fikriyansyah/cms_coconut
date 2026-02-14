@@ -8,10 +8,18 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Services\ImageKitService;
 use Yajra\DataTables\Facades\DataTables;
 
 class BlogController extends Controller
 {
+    protected $imageKit;
+
+    public function __construct(ImageKitService $imageKit)
+    {
+        $this->imageKit = $imageKit;
+    }
+
     /**
      * INDEX
      */
@@ -24,8 +32,7 @@ class BlogController extends Controller
                 ->addIndexColumn()
                 ->addColumn('image', function ($row) {
                     if (!$row->image) return 'No Image';
-                    $url = Storage::disk('nextjs')->url(str_replace('/uploads/', '', $row->image));
-                    return '<img src="' . $url . '" style="height:50px; border-radius:6px;">';
+                    return '<img src="' . $row->image . '" style="height:50px; border-radius:6px;">';
                 })
                 ->addColumn('action', function ($row) {
                     return '
@@ -73,11 +80,13 @@ class BlogController extends Controller
 
         try {
             $imagePath = null;
+            $imageFileId = null;
             if ($request->hasFile('image')) {
-                $file = $request->file('image');
-                $name = time().'_blog_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                Storage::disk('nextjs')->putFileAs('', $file, $name);
-                $imagePath = '/uploads/'.$name;
+                $upload = $this->imageKit->upload($request->file('image'), 'blog');
+                if ($upload) {
+                    $imagePath = $upload->url;
+                    $imageFileId = $upload->fileId;
+                }
             }
 
             // Process tags: if string "tag1, tag2", convert to json array ["tag1", "tag2"]
@@ -98,7 +107,8 @@ class BlogController extends Controller
                 'date_str'   => $request->date_str,
                 'author'     => $request->author,
                 'tags'       => json_encode($tags),
-                'image'      => $imagePath,
+                'image'         => $imagePath,
+                'image_file_id' => $imageFileId,
                 'created_at' => now(),
             ]);
 
@@ -169,23 +179,22 @@ class BlogController extends Controller
 
             if ($request->hasFile('image')) {
                 // Delete old
-                if ($post->image) {
-                    $old = basename($post->image);
-                    if (Storage::disk('nextjs')->exists($old)) {
-                        Storage::disk('nextjs')->delete($old);
-                    }
+                if ($post->image_file_id) {
+                    $this->imageKit->delete($post->image_file_id);
                 }
                 // Upload new
-                $file = $request->file('image');
-                $name = time().'_blog_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                Storage::disk('nextjs')->putFileAs('', $file, $name);
-                $updateData['image'] = '/uploads/'.$name;
+                $upload = $this->imageKit->upload($request->file('image'), 'blog');
+                if ($upload) {
+                    $updateData['image'] = $upload->url;
+                    $updateData['image_file_id'] = $upload->fileId;
+                }
             }
 
             DB::table('blog_posts')->where('id', $id)->update($updateData);
 
             return redirect()->route('blog.index')->with('success', 'Blog post updated successfully');
         } catch (\Exception $e) {
+            
             Log::error($e->getMessage());
             return back()->with('error', 'Failed update blog post: ' . $e->getMessage());
         }
@@ -198,11 +207,8 @@ class BlogController extends Controller
     {
         $post = DB::table('blog_posts')->where('id', $id)->first();
         
-        if ($post && $post->image) {
-            $f = basename($post->image);
-            if (Storage::disk('nextjs')->exists($f)) {
-                Storage::disk('nextjs')->delete($f);
-            }
+        if ($post && $post->image_file_id) {
+            $this->imageKit->delete($post->image_file_id);
         }
 
         DB::table('blog_posts')->where('id', $id)->delete();

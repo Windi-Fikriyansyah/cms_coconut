@@ -7,11 +7,19 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
-
 use Yajra\DataTables\Facades\DataTables;
+
+use App\Services\ImageKitService;
 
 class HeroSectionController extends Controller
 {
+    protected $imageKit;
+
+    public function __construct(ImageKitService $imageKit)
+    {
+        $this->imageKit = $imageKit;
+    }
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -29,13 +37,7 @@ class HeroSectionController extends Controller
                 })
                 ->addColumn('background_image', function ($row) {
     if ($row->background_image) {
-
-        // jika path sudah /uploads/nama.jpg
-        $url = Storage::disk('nextjs')->url(
-            str_replace('/uploads/', '', $row->background_image)
-        );
-
-        return '<img src="'.$url.'" alt="Hero BG" style="height:60px; border-radius:6px;">';
+        return '<img src="'.$row->background_image.'" alt="Hero BG" style="height:60px; border-radius:6px;">';
     }
     return 'No Image';
 })
@@ -76,18 +78,12 @@ class HeroSectionController extends Controller
             ];
 
             if ($request->hasFile('background_image')) {
-    $image = $request->file('background_image');
-    
-    // Generate nama file unik
-    $imageName = time() . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
-    
-    // Simpan ke disk 'nextjs' (folder public/uploads di Next.js)
-    // storeAs parameter: (path_tujuan, nama_file, nama_disk)
-    Storage::disk('nextjs')->putFileAs('', $image, $imageName);
-    
-    // Simpan path relatif ke database agar bisa dipanggil di Next.js
-    $data['background_image'] = '/uploads/' . $imageName;
-}
+                $upload = $this->imageKit->upload($request->file('background_image'), 'hero');
+                if ($upload) {
+                    $data['background_image'] = $upload->url;
+                    $data['background_image_file_id'] = $upload->fileId;
+                }
+            }
 
             DB::table('hero_section')->insert($data);
 
@@ -133,32 +129,19 @@ class HeroSectionController extends Controller
             ];
 
             if ($request->hasFile('background_image')) {
+                $hero = DB::table('hero_section')->where('id', $id)->first();
 
-    // ambil data lama SEKALI saja (lebih efisien)
-    $hero = DB::table('hero_section')->where('id', $id)->first();
+                // Hapus gambar lama dari ImageKit
+                if (!empty($hero->background_image_file_id)) {
+                    $this->imageKit->delete($hero->background_image_file_id);
+                }
 
-    // 🔥 Hapus gambar lama jika ada
-    if (!empty($hero->background_image)) {
-
-        // ambil nama file saja (anti salah path)
-        $oldFile = basename($hero->background_image);
-
-        // cek dulu apakah file benar ada
-        if (Storage::disk('nextjs')->exists($oldFile)) {
-            Storage::disk('nextjs')->delete($oldFile);
-        }
-    }
-
-    // Upload gambar baru
-    $image = $request->file('background_image');
-
-    $imageName = time().'_'.Str::random(10).'.'.$image->getClientOriginalExtension();
-
-    Storage::disk('nextjs')->putFileAs('', $image, $imageName);
-
-    $data['background_image'] = '/uploads/'.$imageName;
-}
-
+                $upload = $this->imageKit->upload($request->file('background_image'), 'hero');
+                if ($upload) {
+                    $data['background_image'] = $upload->url;
+                    $data['background_image_file_id'] = $upload->fileId;
+                }
+            }
 
             DB::table('hero_section')->where('id', $id)->update($data);
 
@@ -179,9 +162,8 @@ class HeroSectionController extends Controller
             }
 
             
-             if ($hero->background_image) {
-                $oldFile = str_replace('uploads/', '', $hero->background_image);
-                Storage::disk('nextjs')->delete($oldFile);
+             if ($hero->background_image_file_id) {
+                $this->imageKit->delete($hero->background_image_file_id);
             }
 
             DB::table('hero_section')->where('id', $id)->delete();

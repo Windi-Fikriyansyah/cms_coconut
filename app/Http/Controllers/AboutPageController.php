@@ -9,8 +9,17 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
+use App\Services\ImageKitService;
+
 class AboutPageController extends Controller
 {
+    protected $imageKit;
+
+    public function __construct(ImageKitService $imageKit)
+    {
+        $this->imageKit = $imageKit;
+    }
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -20,8 +29,7 @@ class AboutPageController extends Controller
                 ->addIndexColumn()
                 ->addColumn('hero_image', function ($row) {
                     if (!$row->hero_image) return 'No Image';
-                    $url = Storage::disk('nextjs')->url(str_replace('/uploads/', '', $row->hero_image));
-                    return '<img src="'.$url.'" style="height:50px;border-radius:6px;">';
+                    return '<img src="'.$row->hero_image.'" style="height:50px;border-radius:6px;">';
                 })
                 ->addColumn('action', function ($row) {
                     return '
@@ -85,29 +93,35 @@ class AboutPageController extends Controller
 
             // Handle hero_image
             if ($request->hasFile('hero_image')) {
-                $file = $request->file('hero_image');
-                $name = time().'_hero_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                Storage::disk('nextjs')->putFileAs('', $file, $name);
-                $data['hero_image'] = '/uploads/'.$name;
+                $upload = $this->imageKit->upload($request->file('hero_image'), 'about');
+                if ($upload) {
+                    $data['hero_image'] = $upload->url;
+                    $data['hero_image_file_id'] = $upload->fileId;
+                }
             }
 
             // Handle journey_image (array)
             $journey_images = [];
             if ($request->hasFile('journey_image')) {
                 foreach ($request->file('journey_image') as $file) {
-                    $name = time().'_journey_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                    Storage::disk('nextjs')->putFileAs('', $file, $name);
-                    $journey_images[] = '/uploads/'.$name;
+                    $upload = $this->imageKit->upload($file, 'about/journey');
+                    if ($upload) {
+                        $journey_images[] = [
+                            'url' => $upload->url,
+                            'fileId' => $upload->fileId
+                        ];
+                    }
                 }
             }
             $data['journey_image'] = json_encode($journey_images);
 
             // Handle commitment_image
             if ($request->hasFile('commitment_image')) {
-                $file = $request->file('commitment_image');
-                $name = time().'_commitment_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                Storage::disk('nextjs')->putFileAs('', $file, $name);
-                $data['commitment_image'] = '/uploads/'.$name;
+                $upload = $this->imageKit->upload($request->file('commitment_image'), 'about/commitment');
+                if ($upload) {
+                    $data['commitment_image'] = $upload->url;
+                    $data['commitment_image_file_id'] = $upload->fileId;
+                }
             }
 
             // JSON data
@@ -118,10 +132,10 @@ class AboutPageController extends Controller
             $process_items = $request->process_items;
             if ($request->hasFile('process_image')) {
                 foreach ($request->file('process_image') as $index => $file) {
-                    $name = time().'_process_'.$index.'_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                    Storage::disk('nextjs')->putFileAs('', $file, $name);
-                    if (isset($process_items[$index])) {
-                        $process_items[$index]['image'] = '/uploads/'.$name;
+                    $upload = $this->imageKit->upload($file, 'about/process');
+                    if ($upload && isset($process_items[$index])) {
+                        $process_items[$index]['image'] = $upload->url;
+                        $process_items[$index]['fileId'] = $upload->fileId;
                     }
                 }
             }
@@ -186,33 +200,64 @@ class AboutPageController extends Controller
 
             // Handle hero_image
             if ($request->hasFile('hero_image')) {
-                if ($about->hero_image) {
-                    Storage::disk('nextjs')->delete(basename($about->hero_image));
+                if ($about->hero_image_file_id) {
+                    $this->imageKit->delete($about->hero_image_file_id);
                 }
-                $file = $request->file('hero_image');
-                $name = time().'_hero_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                Storage::disk('nextjs')->putFileAs('', $file, $name);
-                $data['hero_image'] = '/uploads/'.$name;
+                $upload = $this->imageKit->upload($request->file('hero_image'), 'about');
+                if ($upload) {
+                    $data['hero_image'] = $upload->url;
+                    $data['hero_image_file_id'] = $upload->fileId;
+                }
             }
 
             // Handle journey_image
             $final_journey_images = [];
-            $existing_images = $request->input('existing_journey_images', []);
+            $existing_journey = json_decode($about->journey_image ?? '[]', true) ?: [];
+
+// NORMALIZE (fix jika data lama masih string)
+$existing_journey = array_map(function ($item) {
+    if (is_string($item)) {
+        return [
+            'url' => $item,
+            'fileId' => null
+        ];
+    }
+    return $item;
+}, $existing_journey);
+
+            $existing_urls = $request->input('existing_journey_images', []);
             $replace_files = $request->file('journey_image_replace', []);
             $new_files = $request->file('journey_image_new', []);
 
             // Handle replacements for existing images
-            foreach ($existing_images as $idx => $img_path) {
+            foreach ($existing_urls as $idx => $img_url) {
+    $found_existing = null;
+
+    foreach ($existing_journey as $ej) {
+
+        if (isset($ej['url']) && $ej['url'] === $img_url) {
+            $found_existing = $ej;
+            break;
+        }
+    }
+}
+
+
                 if (isset($replace_files[$idx])) {
                     // Delete old one if replaced
-                    Storage::disk('nextjs')->delete(basename($img_path));
+                    if ($found_existing && isset($found_existing['fileId'])) {
+                        $this->imageKit->delete($found_existing['fileId']);
+                    }
                     
-                    $file = $replace_files[$idx];
-                    $name = time().'_journey_replace_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                    Storage::disk('nextjs')->putFileAs('', $file, $name);
-                    $final_journey_images[] = '/uploads/'.$name;
-                } else {
-                    $final_journey_images[] = $img_path;
+                    $upload = $this->imageKit->upload($replace_files[$idx], 'about/journey');
+                    if ($upload) {
+                        $final_journey_images[] = [
+                            'url' => $upload->url,
+                            'fileId' => $upload->fileId
+                        ];
+                    }
+                } else if ($found_existing) {
+                    $final_journey_images[] = $found_existing;
                 }
             }
 
@@ -220,22 +265,28 @@ class AboutPageController extends Controller
             if ($new_files) {
                 foreach ($new_files as $file) {
                     if (count($final_journey_images) < 3) {
-                        $name = time().'_journey_new_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                        Storage::disk('nextjs')->putFileAs('', $file, $name);
-                        $final_journey_images[] = '/uploads/'.$name;
+                        $upload = $this->imageKit->upload($file, 'about/journey');
+                        if ($upload) {
+                            $final_journey_images[] = [
+                                'url' => $upload->url,
+                                'fileId' => $upload->fileId
+                            ];
+                        }
                     }
                 }
             }
             
-            // Clean up deleted images (if user removed a journey-image-item entirely)
-            $old_journey_images = json_decode($about->journey_image ?? '[]') ?: [];
-            foreach ($old_journey_images as $old_img) {
-                if (!in_array($old_img, $final_journey_images)) {
-                    // Check if this image was part of replacements (already deleted) 
-                    // or if it was just removed from the list
-                    if (!isset($replace_files[array_search($old_img, $old_journey_images)])) {
-                         Storage::disk('nextjs')->delete(basename($old_img));
+            // Clean up deleted images
+            foreach ($existing_journey as $ej) {
+                $remains = false;
+                foreach($final_journey_images as $fj) {
+                    if($fj['url'] === $ej['url']) {
+                        $remains = true;
+                        break;
                     }
+                }
+                if (!$remains && isset($ej['fileId'])) {
+                    $this->imageKit->delete($ej['fileId']);
                 }
             }
 
@@ -243,13 +294,14 @@ class AboutPageController extends Controller
 
             // Handle commitment_image
             if ($request->hasFile('commitment_image')) {
-                if ($about->commitment_image) {
-                    Storage::disk('nextjs')->delete(basename($about->commitment_image));
+                if ($about->commitment_image_file_id) {
+                    $this->imageKit->delete($about->commitment_image_file_id);
                 }
-                $file = $request->file('commitment_image');
-                $name = time().'_commitment_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                Storage::disk('nextjs')->putFileAs('', $file, $name);
-                $data['commitment_image'] = '/uploads/'.$name;
+                $upload = $this->imageKit->upload($request->file('commitment_image'), 'about/commitment');
+                if ($upload) {
+                    $data['commitment_image'] = $upload->url;
+                    $data['commitment_image_file_id'] = $upload->fileId;
+                }
             }
 
             $data['mission_points'] = json_encode($request->mission_points);
@@ -259,12 +311,14 @@ class AboutPageController extends Controller
             if ($request->hasFile('process_image')) {
                 foreach ($request->file('process_image') as $index => $file) {
                     // Delete old image if exists
-                    if (isset($process_items[$index]['image']) && !empty($process_items[$index]['image'])) {
-                         Storage::disk('nextjs')->delete(basename($process_items[$index]['image']));
+                    if (isset($process_items[$index]['fileId'])) {
+                        $this->imageKit->delete($process_items[$index]['fileId']);
                     }
-                    $name = time().'_process_'.$index.'_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                    Storage::disk('nextjs')->putFileAs('', $file, $name);
-                    $process_items[$index]['image'] = '/uploads/'.$name;
+                    $upload = $this->imageKit->upload($file, 'about/process');
+                    if ($upload) {
+                        $process_items[$index]['image'] = $upload->url;
+                        $process_items[$index]['fileId'] = $upload->fileId;
+                    }
                 }
             }
             $data['process_items'] = json_encode($process_items);
@@ -273,6 +327,7 @@ class AboutPageController extends Controller
 
             return redirect()->route('about-page.index')->with('success', 'About Page updated successfully');
         } catch (\Exception $e) {
+            
             Log::error($e->getMessage());
             return back()->with('error', 'Failed to update About Page: ' . $e->getMessage());
         }
@@ -282,17 +337,17 @@ class AboutPageController extends Controller
     {
         $about = DB::table('about_page')->where('id', $id)->first();
         if ($about) {
-            if ($about->hero_image) Storage::disk('nextjs')->delete(basename($about->hero_image));
-            if ($about->commitment_image) Storage::disk('nextjs')->delete(basename($about->commitment_image));
+            if ($about->hero_image_file_id) $this->imageKit->delete($about->hero_image_file_id);
+            if ($about->commitment_image_file_id) $this->imageKit->delete($about->commitment_image_file_id);
             
-            $journey_images = json_decode($about->journey_image ?? '[]') ?: [];
+            $journey_images = json_decode($about->journey_image ?? '[]', true) ?: [];
             foreach ($journey_images as $img) {
-                Storage::disk('nextjs')->delete(basename($img));
+                if (isset($img['fileId'])) $this->imageKit->delete($img['fileId']);
             }
 
-            $process_items = json_decode($about->process_items ?? '[]') ?: [];
+            $process_items = json_decode($about->process_items ?? '[]', true) ?: [];
             foreach ($process_items as $item) {
-                if (isset($item->image)) Storage::disk('nextjs')->delete(basename($item->image));
+                if (isset($item['fileId'])) $this->imageKit->delete($item['fileId']);
             }
 
             DB::table('about_page')->where('id', $id)->delete();

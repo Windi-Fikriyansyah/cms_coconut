@@ -89,7 +89,7 @@
                                 <label for="background_image">Background Image</label>
                                 @if($heroSection->background_image)
                                     <div class="mb-2">
-                                        <img src="{{ Storage::disk('nextjs')->url(str_replace('/uploads/','',$heroSection->background_image)) }}"
+                                        <img src="{{$heroSection->background_image}}"
      class="img-thumbnail"
      style="height:100px; object-fit:cover;">
 

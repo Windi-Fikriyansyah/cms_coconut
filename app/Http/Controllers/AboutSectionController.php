@@ -9,8 +9,17 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
+use App\Services\ImageKitService;
+
 class AboutSectionController extends Controller
 {
+    protected $imageKit;
+
+    public function __construct(ImageKitService $imageKit)
+    {
+        $this->imageKit = $imageKit;
+    }
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -21,22 +30,13 @@ class AboutSectionController extends Controller
                 ->addIndexColumn()
 
                 ->addColumn('image', function ($row) {
-
                     if (!$row->image) return 'No Image';
-
                     $images = json_decode($row->image, true);
-
                     $html = '';
-
                     foreach ($images as $img) {
-
-                        $url = Storage::disk('nextjs')->url(
-                            str_replace('/uploads/', '', $img)
-                        );
-
+                        $url = is_array($img) ? $img['url'] : $img;
                         $html .= '<img src="'.$url.'" style="height:50px;margin-right:5px;border-radius:6px;">';
                     }
-
                     return $html;
                 })
 
@@ -87,10 +87,13 @@ class AboutSectionController extends Controller
 
         for ($i = 1; $i <= 3; $i++) {
             if ($request->hasFile('image'.$i)) {
-                $file = $request->file('image'.$i);
-                $name = time().'_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                Storage::disk('nextjs')->putFileAs('', $file, $name);
-                $images[] = '/uploads/'.$name;
+                $upload = $this->imageKit->upload($request->file('image'.$i), 'about_section');
+                if ($upload) {
+                    $images[] = [
+                        'url' => $upload->url,
+                        'fileId' => $upload->fileId
+                    ];
+                }
             }
         }
 
@@ -139,17 +142,17 @@ class AboutSectionController extends Controller
         if ($request->hasFile('image'.$i)) {
 
             // hapus gambar lama jika ada
-            if (isset($images[$i-1])) {
-                $file = basename($images[$i-1]);
-                if (Storage::disk('nextjs')->exists($file)) {
-                    Storage::disk('nextjs')->delete($file);
-                }
+            if (isset($images[$i-1]) && is_array($images[$i-1]) && isset($images[$i-1]['fileId'])) {
+                $this->imageKit->delete($images[$i-1]['fileId']);
             }
 
-            $file = $request->file('image'.$i);
-            $name = time().'_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-            Storage::disk('nextjs')->putFileAs('', $file, $name);
-            $images[$i-1] = '/uploads/'.$name;
+            $upload = $this->imageKit->upload($request->file('image'.$i), 'about_section');
+            if ($upload) {
+                $images[$i-1] = [
+                    'url' => $upload->url,
+                    'fileId' => $upload->fileId
+                ];
+            }
         }
     }
 
@@ -165,12 +168,10 @@ class AboutSectionController extends Controller
         $about = DB::table('about_section')->where('id',$id)->first();
 
         if ($about->image){
-
-            foreach (json_decode($about->image) as $img){
-
-                $file = basename($img);
-
-                Storage::disk('nextjs')->delete($file);
+            foreach (json_decode($about->image, true) as $img){
+                if (is_array($img) && isset($img['fileId'])) {
+                    $this->imageKit->delete($img['fileId']);
+                }
             }
         }
 

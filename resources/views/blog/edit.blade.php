@@ -58,7 +58,7 @@
                         <label class="form-label">Main Image <small class="text-muted">(webp only)</small></label>
                         @if($post->image)
                             <div class="mb-2">
-                                <img src="{{ Storage::disk('nextjs')->url(str_replace('/uploads/', '', $post->image)) }}" style="height:100px;border-radius:8px;">
+                                <img src="{{ $post->image }}" style="height:100px;border-radius:8px;">
                                 <small class="d-block text-muted">Current Image</small>
                             </div>
                         @endif

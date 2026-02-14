@@ -34,7 +34,7 @@
                         <label class="form-label">Hero Image (WebP only)</label>
                         @if($about->hero_image)
                             <div class="mb-2">
-                                <img src="{{ Storage::disk('nextjs')->url(str_replace('/uploads/', '', $about->hero_image)) }}" style="height: 100px; border-radius: 8px;">
+                                <img src="{{$about->hero_image }}" style="height: 100px; border-radius: 8px;">
                             </div>
                         @endif
                         <input type="file" name="hero_image" class="form-control" accept="image/webp">
@@ -73,8 +73,8 @@
                                     <div class="col-md-4 mb-3 journey-image-item">
                                         <div class="card border p-2 shadow-sm">
                                             <div class="mb-2 text-center">
-                                                <img src="{{ Storage::disk('nextjs')->url(str_replace('/uploads/', '', $img)) }}" style="height: 80px; border-radius: 8px;">
-                                                <input type="hidden" name="existing_journey_images[]" value="{{ $img }}">
+                                                <img src="{{ $img->url }}" style="height: 80px; border-radius: 8px;">
+                                                <input type="hidden" name="existing_journey_images[]" value="{{ $img->url }}">
                                             </div>
                                             <div class="input-group">
                                                 <input type="file" name="journey_image_replace[]" class="form-control" accept="image/webp">

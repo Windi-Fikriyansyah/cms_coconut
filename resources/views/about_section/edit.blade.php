@@ -40,7 +40,7 @@
                             <label>Image {{ $i+1 }}</label>
                             @if(isset($images[$i]))
                                 <div class="mb-2">
-                                    <img src="{{ Storage::disk('nextjs')->url(str_replace('/uploads/', '', $images[$i])) }}"
+                                    <img src="{{ is_array($images[$i]) ? $images[$i]['url'] : $images[$i] }}"
                                          style="height:80px;margin-right:6px;border-radius:6px;">
                                     <small class="d-block text-muted">Gambar saat ini</small>
                                 </div>

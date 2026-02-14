@@ -48,7 +48,7 @@
                         <label class="form-label">Background Image <small class="text-muted">(webp only)</small></label>
                         @if($metadata->background_image)
                             <div class="mb-2">
-                                <img src="{{ Storage::disk('nextjs')->url(str_replace('/uploads/', '', $metadata->background_image)) }}" style="height:100px;border-radius:8px;">
+                                <img src="{{ $metadata->background_image }}" style="height:100px;border-radius:8px;">
                                 <small class="d-block text-muted">Current Background</small>
                             </div>
                         @endif
@@ -81,7 +81,7 @@
                                     <label class="form-label">Image (webp)</label>
                                     @if($img->src)
                                         <div class="mb-1">
-                                            <img src="{{ Storage::disk('nextjs')->url(str_replace('/uploads/', '', $img->src)) }}" style="height:50px;border-radius:4px;">
+                                            <img src="{{$img->src }}" style="height:50px;border-radius:4px;">
                                         </div>
                                     @endif
                                     <input type="file" name="gallery_images[{{ $idx }}]" class="form-control" accept=".webp">

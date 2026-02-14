@@ -40,13 +40,18 @@
                     @endphp
                     <div id="existing-images-container" class="mb-3">
                         @foreach($images as $img)
+    @php
+        $imgUrl = is_array($img) ? $img['url'] : $img;
+    @endphp
+
+                        
                             <div class="input-group mb-2 existing-image-row">
                                 <span class="input-group-text">
-                                    <img src="{{ Storage::disk('nextjs')->url(str_replace('/uploads/', '', $img)) }}" style="height:30px">
+                                    <img src="{{ is_array($img) ? $img['url'] : $img }}" style="height:30px">
                                 </span>
-                                <input type="text" class="form-control" value="{{ $img }}" disabled>
+                                <input type="text" class="form-control" value="{{ $imgUrl }}" disabled>
                                 {{-- Hidden input to send back if we keep it --}}
-                                <input type="hidden" name="existing_images[]" value="{{ $img }}">
+                                <input type="hidden" name="existing_images[]" value="{{ $imgUrl }}">
                                 <button type="button" class="btn btn-danger btn-remove-image" onclick="removeExistingImage(this)">
                                     <i class="bi bi-trash"></i>
                                 </button>

@@ -9,8 +9,17 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
+use App\Services\ImageKitService;
+
 class WhyChooseController extends Controller
 {
+    protected $imageKit;
+
+    public function __construct(ImageKitService $imageKit)
+    {
+        $this->imageKit = $imageKit;
+    }
+
     /**
      * INDEX
      */
@@ -32,9 +41,7 @@ class WhyChooseController extends Controller
                     $html = '';
                     // Display up to 3 images as preview
                     foreach (array_slice($images, 0, 3) as $img) {
-                        $url = Storage::disk('nextjs')->url(
-                            str_replace('/uploads/', '', $img)
-                        );
+                        $url = is_array($img) ? $img['url'] : $img;
                         $html .= '<img src="'.$url.'" style="height:40px;margin-right:4px;border-radius:4px;">';
                     }
                     if (count($images) > 3) {
@@ -106,9 +113,13 @@ class WhyChooseController extends Controller
             $sectionImages = [];
             if ($request->hasFile('section_images')) {
                 foreach ($request->file('section_images') as $file) {
-                    $name = time().'_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                    Storage::disk('nextjs')->putFileAs('', $file, $name);
-                    $sectionImages[] = '/uploads/'.$name;
+                    $upload = $this->imageKit->upload($file, 'why_choose');
+                    if ($upload) {
+                        $sectionImages[] = [
+                            'url' => $upload->url,
+                            'fileId' => $upload->fileId
+                        ];
+                    }
                 }
             }
 
@@ -181,33 +192,47 @@ class WhyChooseController extends Controller
         ]);
 
         try {
-            // 1. Handle Images: Merge kept existing images + newly uploaded ones
-            $finalImages = $request->existing_images ?? [];
+            // 1. Handle Images
+            $finalImages = [];
+            $existing_raw = $request->input('existing_images', []);
+            $oldSection = DB::table('why_choose_us_metadata')->where('id', $id)->first();
+            $oldImages = json_decode($oldSection->image ?? '[]', true) ?: [];
 
-            if ($request->hasFile('section_images')) {
-                foreach ($request->file('section_images') as $file) {
-                    $name = time().'_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                    Storage::disk('nextjs')->putFileAs('', $file, $name);
-                    $finalImages[] = '/uploads/'.$name;
+            // Filter existing images
+            foreach ($existing_raw as $url) {
+                foreach ($oldImages as $oi) {
+                    if ((is_array($oi) && $oi['url'] === $url) || (!is_array($oi) && $oi === $url)) {
+                        $finalImages[] = $oi;
+                        break;
+                    }
                 }
             }
 
-            // Clean up deleted images (those in DB but not in finalImages)
-            $oldSection = DB::table('why_choose_us_metadata')->where('id', $id)->first();
-            $oldImages = json_decode($oldSection->image ?? '[]', true) ?: [];
-            
-            // Find images that were in DB but are NOT in the submitted 'existing_images' list
-            // (User deleted them in UI)
-            // Note: Use array_values to re-index
-            $finalImages = array_values($finalImages);
-            
-            foreach ($oldImages as $oldImg) {
-                if (!in_array($oldImg, $finalImages)) {
-                    // Delete from storage
-                    $file = basename($oldImg);
-                    if (Storage::disk('nextjs')->exists($file)) {
-                        Storage::disk('nextjs')->delete($file);
+            if ($request->hasFile('section_images')) {
+                foreach ($request->file('section_images') as $file) {
+                    $upload = $this->imageKit->upload($file, 'why_choose');
+                    if ($upload) {
+                        $finalImages[] = [
+                            'url' => $upload->url,
+                            'fileId' => $upload->fileId
+                        ];
                     }
+                }
+            }
+
+            // Clean up deleted images
+            foreach ($oldImages as $oldImg) {
+                $remains = false;
+                foreach ($finalImages as $fi) {
+                    $oldUrl = is_array($oldImg) ? $oldImg['url'] : $oldImg;
+                    $newUrl = is_array($fi) ? $fi['url'] : $fi;
+                    if ($oldUrl === $newUrl) {
+                        $remains = true;
+                        break;
+                    }
+                }
+                if (!$remains && is_array($oldImg) && isset($oldImg['fileId'])) {
+                    $this->imageKit->delete($oldImg['fileId']);
                 }
             }
 
@@ -272,9 +297,8 @@ class WhyChooseController extends Controller
             $images = json_decode($section->image, true);
             if (is_array($images)) {
                 foreach ($images as $img) {
-                    $file = basename($img);
-                    if (Storage::disk('nextjs')->exists($file)) {
-                        Storage::disk('nextjs')->delete($file);
+                    if (is_array($img) && isset($img['fileId'])) {
+                        $this->imageKit->delete($img['fileId']);
                     }
                 }
             }

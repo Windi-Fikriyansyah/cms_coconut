@@ -9,8 +9,17 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
+use App\Services\ImageKitService;
+
 class GalleryController extends Controller
 {
+    protected $imageKit;
+
+    public function __construct(ImageKitService $imageKit)
+    {
+        $this->imageKit = $imageKit;
+    }
+
     /**
      * INDEX
      */
@@ -24,8 +33,7 @@ class GalleryController extends Controller
                 ->addIndexColumn()
                 ->addColumn('image', function ($row) {
                     if (!$row->background_image) return 'No Image';
-                    $url = Storage::disk('nextjs')->url(str_replace('/uploads/', '', $row->background_image));
-                    return '<img src="' . $url . '" style="height:50px; border-radius:6px;">';
+                    return '<img src="' . $row->background_image . '" style="height:50px; border-radius:6px;">';
                 })
                 ->addColumn('images_count', function ($row) {
                     return DB::table('gallery_images')
@@ -86,11 +94,13 @@ class GalleryController extends Controller
         try {
             // 1. Upload Background Image
             $bgPath = null;
+            $bgFileId = null;
             if ($request->hasFile('background_image')) {
-                $file = $request->file('background_image');
-                $name = time().'_bg_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                Storage::disk('nextjs')->putFileAs('', $file, $name);
-                $bgPath = '/uploads/'.$name;
+                $upload = $this->imageKit->upload($request->file('background_image'), 'gallery');
+                if ($upload) {
+                    $bgPath = $upload->url;
+                    $bgFileId = $upload->fileId;
+                }
             }
 
             // 2. Insert Metadata
@@ -99,6 +109,7 @@ class GalleryController extends Controller
                 'subtitle'         => $request->subtitle,
                 'description'      => $request->description,
                 'background_image' => $bgPath,
+                'background_image_file_id' => $bgFileId,
             ]);
 
             // 3. Insert Gallery Images
@@ -106,11 +117,13 @@ class GalleryController extends Controller
                 foreach ($request->img_title as $idx => $title) {
                     // Upload image for this item if exists
                     $srcPath = null;
+                    $srcFileId = null;
                     if ($request->hasFile("gallery_images.$idx")) {
-                        $f = $request->file("gallery_images")[$idx]; // standard array access for files
-                        $fname = time().'_img_'.Str::random(8).'.'.$f->getClientOriginalExtension();
-                        Storage::disk('nextjs')->putFileAs('', $f, $fname);
-                        $srcPath = '/uploads/'.$fname;
+                        $upload = $this->imageKit->upload($request->file("gallery_images")[$idx], 'gallery/images');
+                        if ($upload) {
+                            $srcPath = $upload->url;
+                            $srcFileId = $upload->fileId;
+                        }
                     }
 
                     // Only insert if title OR image is provided (or just image? prompt says src required logic usually)
@@ -120,6 +133,7 @@ class GalleryController extends Controller
                     DB::table('gallery_images')->insert([
                         'gallery_metadata_id' => $metaId,
                         'src'           => $srcPath ?? '',
+                        'image_path_file_id' => $srcFileId,
                         'title'         => $title ?? '',
                         'category'      => $request->img_category[$idx] ?? '',
                         'display_order' => $request->img_display_order[$idx] ?? 0,
@@ -184,17 +198,15 @@ class GalleryController extends Controller
 
             if ($request->hasFile('background_image')) {
                 // Delete old bg
-                if ($metadata->background_image) {
-                    $oldBg = basename($metadata->background_image);
-                    if (Storage::disk('nextjs')->exists($oldBg)) {
-                        Storage::disk('nextjs')->delete($oldBg);
-                    }
+                if ($metadata->background_image_file_id) {
+                    $this->imageKit->delete($metadata->background_image_file_id);
                 }
                 // Upload new bg
-                $file = $request->file('background_image');
-                $name = time().'_bg_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                Storage::disk('nextjs')->putFileAs('', $file, $name);
-                $updateData['background_image'] = '/uploads/'.$name;
+                $upload = $this->imageKit->upload($request->file('background_image'), 'gallery');
+                if ($upload) {
+                    $updateData['background_image'] = $upload->url;
+                    $updateData['background_image_file_id'] = $upload->fileId;
+                }
             }
 
             DB::table('gallery_metadata')->where('id', $id)->update($updateData);
@@ -207,11 +219,8 @@ class GalleryController extends Controller
             $toDelete = array_diff($existingIds, $submittedIds);
             foreach ($toDelete as $delId) {
                 $imgRow = DB::table('gallery_images')->where('id', $delId)->first();
-                if ($imgRow && $imgRow->src) {
-                    $f = basename($imgRow->src);
-                    if (Storage::disk('nextjs')->exists($f)) {
-                        Storage::disk('nextjs')->delete($f);
-                    }
+                if ($imgRow && $imgRow->image_path_file_id) {
+                    $this->imageKit->delete($imgRow->image_path_file_id);
                 }
                 DB::table('gallery_images')->where('id', $delId)->delete();
             }
@@ -227,15 +236,13 @@ class GalleryController extends Controller
                     // In Laravel $request->file('gallery_images') is array keyed by index if formulated correctly.
                     
                     $srcPath = null;
+                    $srcFileId = null;
                     if ($request->hasFile("gallery_images.$idx")) {
-                        $f = $request->file("gallery_images")[$idx]; 
-                        // Actually if we use name="gallery_images[0]" then request->file('gallery_images')[0] is correct.
-                        // But if we delete rows in JS, indexes might be non-sequential.
-                        // $request->file('gallery_images') returns array where KEY is the index.
-                        
-                        $fname = time().'_img_'.Str::random(8).'.'.$f->getClientOriginalExtension();
-                        Storage::disk('nextjs')->putFileAs('', $f, $fname);
-                        $srcPath = '/uploads/'.$fname;
+                        $upload = $this->imageKit->upload($request->file("gallery_images")[$idx], 'gallery/images');
+                        if ($upload) {
+                            $srcPath = $upload->url;
+                            $srcFileId = $upload->fileId;
+                        }
                     }
 
                     // Prepare data
@@ -251,12 +258,12 @@ class GalleryController extends Controller
                          // If updating, delete old image? 
                          if ($itemId) {
                              $oldItem = DB::table('gallery_images')->where('id', $itemId)->first();
-                             if ($oldItem && $oldItem->src) {
-                                 $oldF = basename($oldItem->src);
-                                 if (Storage::disk('nextjs')->exists($oldF)) Storage::disk('nextjs')->delete($oldF);
+                             if ($oldItem && $oldItem->image_path_file_id) {
+                                 $this->imageKit->delete($oldItem->image_path_file_id);
                              }
                          }
                          $dataItem['src'] = $srcPath;
+                         $dataItem['image_path_file_id'] = $srcFileId;
                     }
 
                     if ($itemId && in_array($itemId, $existingIds)) {
@@ -272,6 +279,7 @@ class GalleryController extends Controller
             return redirect()->route('gallery.index')->with('success', 'Gallery updated successfully');
 
         } catch (\Exception $e) {
+          
             Log::error($e->getMessage());
             return back()->with('error', 'Failed update gallery: ' . $e->getMessage());
         }
@@ -285,21 +293,15 @@ class GalleryController extends Controller
         $metadata = DB::table('gallery_metadata')->where('id', $id)->first();
 
         // 1. Delete background meta
-        if ($metadata->background_image) {
-            $f = basename($metadata->background_image);
-            if (Storage::disk('nextjs')->exists($f)) {
-                Storage::disk('nextjs')->delete($f);
-            }
+        if ($metadata->background_image_file_id) {
+            $this->imageKit->delete($metadata->background_image_file_id);
         }
 
         // 2. Delete gallery images
         $images = DB::table('gallery_images')->where('gallery_metadata_id', $id)->get();
         foreach ($images as $img) {
-            if ($img->src) {
-                $f = basename($img->src);
-                if (Storage::disk('nextjs')->exists($f)) {
-                    Storage::disk('nextjs')->delete($f);
-                }
+            if ($img->image_path_file_id) {
+                $this->imageKit->delete($img->image_path_file_id);
             }
         }
         

@@ -9,8 +9,17 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
+use App\Services\ImageKitService;
+
 class ProductController extends Controller
 {
+    protected $imageKit;
+
+    public function __construct(ImageKitService $imageKit)
+    {
+        $this->imageKit = $imageKit;
+    }
+
     /**
      * INDEX — DataTable list
      */
@@ -25,12 +34,7 @@ class ProductController extends Controller
 
                 ->addColumn('image', function ($row) {
                     if (!$row->image) return 'No Image';
-
-                    $url = Storage::disk('nextjs')->url(
-                        str_replace('/uploads/', '', $row->image)
-                    );
-
-                    return '<img src="' . $url . '" style="height:50px;border-radius:6px;">';
+                    return '<img src="' . $row->image . '" style="height:50px; border-radius:6px;">';
                 })
 
                 ->addColumn('why_points_display', function ($row) {
@@ -112,11 +116,13 @@ class ProductController extends Controller
 
             // Upload product image
             $imagePath = null;
+            $imageFileId = null;
             if ($request->hasFile('image')) {
-                $file = $request->file('image');
-                $name = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-                $file->storeAs('uploads', $name, 'public');
-                $imagePath = '/storage/uploads/' . $name;
+                $upload = $this->imageKit->upload($request->file('image'), 'products');
+                if ($upload) {
+                    $imagePath = $upload->url;
+                    $imageFileId = $upload->fileId;
+                }
             }
 
             // Why points — filter empty
@@ -128,6 +134,7 @@ class ProductController extends Controller
                 'title'            => $request->title,
                 'short_description'            => $request->short_description,
                 'image'            => $imagePath,
+                'image_file_id'    => $imageFileId,
                 'why_points'       => json_encode($whyPoints),
                 'meta_title'       => $request->meta_title,
                 'meta_description' => $request->meta_description,
@@ -144,9 +151,13 @@ class ProductController extends Controller
                     $detailImgs = [];
                     if ($request->hasFile("detail_images.$idx")) {
                         foreach ($request->file("detail_images.$idx") as $file) {
-                            $name = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-                            Storage::disk('nextjs')->putFileAs('', $file, $name);
-                            $detailImgs[] = ['url' => '/uploads/' . $name];
+                            $upload = $this->imageKit->upload($file, 'products/details');
+                            if ($upload) {
+                                $detailImgs[] = [
+                                    'url' => $upload->url,
+                                    'fileId' => $upload->fileId
+                                ];
+                            }
                         }
                     }
 
@@ -207,11 +218,12 @@ class ProductController extends Controller
             'detail_display_order.*' => 'nullable|integer',
         ]);
 
+        
         try {
             $product = DB::table('products')->where('id', $id)->first();
             $slug = Str::slug($request->title);
 
-            $data = [
+            $updateData = [
                 'slug'             => $slug,
                 'title'            => $request->title,
                 'short_description'            => $request->short_description,
@@ -222,90 +234,67 @@ class ProductController extends Controller
 
             // Upload new product image
             if ($request->hasFile('image')) {
-                // Delete old image
-                if ($product->image) {
-                    $oldFile = basename($product->image);
-                    if (Storage::disk('nextjs')->exists($oldFile)) {
-                        Storage::disk('nextjs')->delete($oldFile);
-                    }
+                if ($product->image_file_id) {
+                    $this->imageKit->delete($product->image_file_id);
                 }
-
-                $file = $request->file('image');
-                $name = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-                Storage::disk('nextjs')->putFileAs('', $file, $name);
-                $data['image'] = '/uploads/' . $name;
+                $upload = $this->imageKit->upload($request->file('image'), 'products');
+                if (!$upload) {
+    throw new \Exception('Upload ke ImageKit gagal');
+}
+                if ($upload) {
+                    $updateData['image'] = $upload->url;
+                    $updateData['image_file_id'] = $upload->fileId;
+                }
             }
 
             // Why points
             $whyPoints = array_values(array_filter($request->why_points ?? []));
-            $data['why_points'] = json_encode($whyPoints);
+            $updateData['why_points'] = json_encode($whyPoints);
 
-            DB::table('products')->where('id', $id)->update($data);
+            DB::table('products')->where('id', $id)->update($updateData);
 
             // Sync product details
-            // Collect existing detail IDs to compare
-            $existingDetailIds = DB::table('product_details')
+            $existingDetails = DB::table('product_details')
                 ->where('product_id', $id)
-                ->pluck('id')
-                ->toArray();
+                ->get();
 
             $submittedDetailIds = array_filter($request->detail_id ?? []);
+            $keepDetailIds = [];
 
-            // Delete removed details
-            $toDelete = array_diff($existingDetailIds, $submittedDetailIds);
-            if (!empty($toDelete)) {
-                // Delete images for removed details
-                $removedDetails = DB::table('product_details')->whereIn('id', $toDelete)->get();
-                foreach ($removedDetails as $rd) {
-                    if ($rd->image) {
-                        $imgs = json_decode($rd->image, true);
-                        if (is_array($imgs)) {
-                            foreach ($imgs as $img) {
-                                $f = basename($img['url'] ?? '');
-                                if ($f && Storage::disk('nextjs')->exists($f)) {
-                                    Storage::disk('nextjs')->delete($f);
-                                }
-                            }
-                        }
-                    }
-                }
-                DB::table('product_details')->whereIn('id', $toDelete)->delete();
-            }
-
-            // Update or insert details
             if ($request->detail_title) {
                 foreach ($request->detail_title as $idx => $detailTitle) {
                     if (!$detailTitle) continue;
 
                     $detailId = $request->detail_id[$idx] ?? null;
+                    $newDetailImgs = [];
 
-                    // Handle detail images
-                    $detailImgs = [];
-
-                    // Keep existing images if editing
+                    // Get existing images for this detail if it's an update
+                    $oldDetail = null;
                     if ($detailId) {
-                        $existingDetail = DB::table('product_details')->where('id', $detailId)->first();
-                        if ($existingDetail && $existingDetail->image) {
-                            $detailImgs = json_decode($existingDetail->image, true) ?: [];
+                        $oldDetail = $existingDetails->firstWhere('id', $detailId);
+                        if ($oldDetail && $oldDetail->image) {
+                            $newDetailImgs = json_decode($oldDetail->image, true) ?: [];
                         }
                     }
 
                     // Upload new images
                     if ($request->hasFile("detail_images.$idx")) {
-                        // Replace all images with new ones
-                        // Delete old images first
-                        foreach ($detailImgs as $img) {
-                            $f = basename($img['url'] ?? '');
-                            if ($f && Storage::disk('nextjs')->exists($f)) {
-                                Storage::disk('nextjs')->delete($f);
+                        // Delete old images associated with this detail if new ones are uploaded
+                        foreach ($newDetailImgs as $img) {
+                            if (isset($img['fileId'])) {
+                                $this->imageKit->delete($img['fileId']);
                             }
                         }
+                        $newDetailImgs = []; // Reset for new uploads
 
-                        $detailImgs = [];
                         foreach ($request->file("detail_images.$idx") as $file) {
-                            $name = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-                            Storage::disk('nextjs')->putFileAs('', $file, $name);
-                            $detailImgs[] = ['url' => '/uploads/' . $name];
+                            $upload = $this->imageKit->upload($file, 'products/details');
+                            if ($upload) {
+                                $newDetailImgs[] = [
+                                    'url' => $upload->url,
+                                    'fileId' => $upload->fileId
+                                ];
+                            }
                         }
                     }
 
@@ -313,20 +302,36 @@ class ProductController extends Controller
                         'product_id'    => $id,
                         'title'         => $detailTitle,
                         'description'   => $request->detail_description[$idx] ?? null,
-                        'image'         => json_encode($detailImgs),
+                        'image'         => json_encode($newDetailImgs),
                         'display_order' => $request->detail_display_order[$idx] ?? 0,
                     ];
 
-                    if ($detailId && in_array($detailId, $existingDetailIds)) {
+                    if ($detailId && $oldDetail) {
                         DB::table('product_details')->where('id', $detailId)->update($detailData);
+                        $keepDetailIds[] = $detailId;
                     } else {
-                        DB::table('product_details')->insert($detailData);
+                        $newId = DB::table('product_details')->insertGetId($detailData);
+                        $keepDetailIds[] = $newId;
                     }
+                }
+            }
+
+            // Delete details that were not in the submitted list
+            foreach ($existingDetails as $ed) {
+                if (!in_array($ed->id, $keepDetailIds)) {
+                    $oldImgs = json_decode($ed->image ?? '[]', true);
+                    foreach ($oldImgs as $oi) {
+                        if (isset($oi['fileId'])) {
+                            $this->imageKit->delete($oi['fileId']);
+                        }
+                    }
+                    DB::table('product_details')->where('id', $ed->id)->delete();
                 }
             }
 
             return redirect()->route('product.index')->with('success', 'Product updated successfully');
         } catch (\Exception $e) {
+            // dd($e);
             Log::error($e->getMessage());
             return back()->with('error', 'Failed to update product: ' . $e->getMessage());
         }
@@ -340,11 +345,8 @@ class ProductController extends Controller
         $product = DB::table('products')->where('id', $id)->first();
 
         // Delete product image
-        if ($product->image) {
-            $file = basename($product->image);
-            if (Storage::disk('nextjs')->exists($file)) {
-                Storage::disk('nextjs')->delete($file);
-            }
+        if ($product->image_file_id) {
+            $this->imageKit->delete($product->image_file_id);
         }
 
         // Delete product detail images
@@ -354,9 +356,8 @@ class ProductController extends Controller
                 $imgs = json_decode($detail->image, true);
                 if (is_array($imgs)) {
                     foreach ($imgs as $img) {
-                        $f = basename($img['url'] ?? '');
-                        if ($f && Storage::disk('nextjs')->exists($f)) {
-                            Storage::disk('nextjs')->delete($f);
+                        if (isset($img['fileId'])) {
+                            $this->imageKit->delete($img['fileId']);
                         }
                     }
                 }

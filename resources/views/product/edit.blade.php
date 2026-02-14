@@ -65,7 +65,7 @@
                         <label class="form-label">Image <small class="text-muted">(format: webp)</small></label>
                         @if($product->image)
                             <div class="mb-2">
-                                <img src="{{ Storage::disk('nextjs')->url(str_replace('/uploads/', '', $product->image)) }}"
+                                <img src="{{ $product->image }}"
                                      style="height:80px;border-radius:6px;">
                                 <small class="d-block text-muted">Gambar saat ini</small>
                             </div>
@@ -162,7 +162,7 @@
                                         <div class="mb-2 d-flex flex-wrap gap-2">
                                             @foreach($detailImages as $img)
                                                 <div>
-                                                    <img src="{{ Storage::disk('nextjs')->url(str_replace('/uploads/', '', $img['url'] ?? '')) }}"
+                                                    <img src="{{ $img['url'] }}"
                                                          style="height:60px;border-radius:6px;">
                                                 </div>
                                             @endforeach

@@ -41,7 +41,7 @@
                         <label class="form-label">Logo Image <small class="text-muted">(webp only)</small></label>
                         @if($certificate->logo)
                             <div class="mb-2">
-                                <img src="{{ Storage::disk('nextjs')->url(str_replace('/uploads/', '', $certificate->logo)) }}" style="height:80px;border-radius:6px;border:1px solid #eee;padding:4px;">
+                                <img src="{{ $certificate->logo }}" style="height:80px;border-radius:6px;border:1px solid #eee;padding:4px;">
                                 <small class="d-block text-muted">Current Logo</small>
                             </div>
                         @endif

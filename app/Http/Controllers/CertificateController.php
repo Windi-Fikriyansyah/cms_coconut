@@ -9,8 +9,17 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
+use App\Services\ImageKitService;
+
 class CertificateController extends Controller
 {
+    protected $imageKit;
+
+    public function __construct(ImageKitService $imageKit)
+    {
+        $this->imageKit = $imageKit;
+    }
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -20,8 +29,7 @@ class CertificateController extends Controller
                 ->addIndexColumn()
                 ->addColumn('image', function ($row) {
                     if (!$row->logo) return 'No Image';
-                    $url = Storage::disk('nextjs')->url(str_replace('/uploads/', '', $row->logo));
-                    return '<img src="' . $url . '" style="height:50px; border-radius:6px;">';
+                    return '<img src="' . $row->logo . '" style="height:50px; border-radius:6px;">';
                 })
                 ->addColumn('action', function ($row) {
                     return '
@@ -57,23 +65,27 @@ class CertificateController extends Controller
 
         try {
             $logoPath = null;
+            $logoFileId = null;
             if ($request->hasFile('logo')) {
-                $file = $request->file('logo');
-                $name = time().'_cert_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                Storage::disk('nextjs')->putFileAs('', $file, $name);
-                $logoPath = '/uploads/'.$name;
+                $upload = $this->imageKit->upload($request->file('logo'), 'certificates');
+                if ($upload) {
+                    $logoPath = $upload->url;
+                    $logoFileId = $upload->fileId;
+                }
             }
 
             DB::table('certificates')->insert([
                 'title'         => $request->title,
                 'full_title'         => $request->title,
                 'logo'          => $logoPath,
+                'logo_file_id'   => $logoFileId,
                 'display_order' => $request->display_order ?? 0,
                 'created_at'    => now(),
             ]);
 
             return redirect()->route('certificate.index')->with('success', 'Certificate created successfully');
         } catch (\Exception $e) {
+            
             Log::error($e->getMessage());
             return back()->with('error', 'Failed create certificate: ' . $e->getMessage());
         }
@@ -107,17 +119,15 @@ class CertificateController extends Controller
 
             if ($request->hasFile('logo')) {
                 // Delete old logo
-                if ($certificate->logo) {
-                    $oldLogo = basename($certificate->logo);
-                    if (Storage::disk('nextjs')->exists($oldLogo)) {
-                        Storage::disk('nextjs')->delete($oldLogo);
-                    }
+                if ($certificate->logo_file_id) {
+                    $this->imageKit->delete($certificate->logo_file_id);
                 }
                 // Upload new logo
-                $file = $request->file('logo');
-                $name = time().'_cert_'.Str::random(8).'.'.$file->getClientOriginalExtension();
-                Storage::disk('nextjs')->putFileAs('', $file, $name);
-                $updateData['logo'] = '/uploads/'.$name;
+                $upload = $this->imageKit->upload($request->file('logo'), 'certificates');
+                if ($upload) {
+                    $updateData['logo'] = $upload->url;
+                    $updateData['logo_file_id'] = $upload->fileId;
+                }
             }
 
             DB::table('certificates')->where('id', $id)->update($updateData);
@@ -134,11 +144,8 @@ class CertificateController extends Controller
     {
         $certificate = DB::table('certificates')->where('id', $id)->first();
 
-        if ($certificate && $certificate->logo) {
-            $f = basename($certificate->logo);
-            if (Storage::disk('nextjs')->exists($f)) {
-                Storage::disk('nextjs')->delete($f);
-            }
+        if ($certificate && $certificate->logo_file_id) {
+            $this->imageKit->delete($certificate->logo_file_id);
         }
 
         DB::table('certificates')->where('id', $id)->delete();
