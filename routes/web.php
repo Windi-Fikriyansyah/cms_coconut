@@ -90,7 +90,7 @@ Route::prefix('certificate')->name('certificate.')->group(function () {
 
 });
 
-Route::prefix('contact')->name('contact.')->group(function () {
+    Route::prefix('contact')->name('contact.')->group(function () {
 
     Route::get('/', [App\Http\Controllers\ContactController::class,'index'])->name('index');
     Route::get('/create', [App\Http\Controllers\ContactController::class,'create'])->name('create');
@@ -99,6 +99,21 @@ Route::prefix('contact')->name('contact.')->group(function () {
     Route::put('/update/{id}', [App\Http\Controllers\ContactController::class,'update'])->name('update');
     Route::delete('/delete/{id}', [App\Http\Controllers\ContactController::class,'destroy'])->name('destroy');
 
+});
+
+Route::prefix('message')->name('message.')->group(function () {
+    Route::get('/', [App\Http\Controllers\ContactMessageController::class, 'index'])->name('index');
+    Route::delete('/delete/{id}', [App\Http\Controllers\ContactMessageController::class, 'destroy'])->name('destroy');
+});
+
+Route::prefix('sample')->name('sample.')->group(function () {
+    Route::get('/', [App\Http\Controllers\SampleController::class, 'index'])->name('index');
+    Route::delete('/delete/{id}', [App\Http\Controllers\SampleController::class, 'destroy'])->name('destroy');
+});
+
+Route::prefix('quote')->name('quote.')->group(function () {
+    Route::get('/', [App\Http\Controllers\QuoteController::class, 'index'])->name('index');
+    Route::delete('/delete/{id}', [App\Http\Controllers\QuoteController::class, 'destroy'])->name('destroy');
 });
 
 Route::prefix('footer')->name('footer.')->group(function () {

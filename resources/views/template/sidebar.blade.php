@@ -97,6 +97,27 @@
         </a>
     </li>
 
+    <li class="menu-item">
+        <a href="{{ route('message.index') }}" class="menu-link">
+            <i class="menu-icon tf-icons bx bx-envelope"></i>
+            <div data-i18n="Messages">Data Messages</div>
+        </a>
+    </li>
+
+    <li class="menu-item">
+        <a href="{{ route('sample.index') }}" class="menu-link">
+            <i class="menu-icon tf-icons bx bx-download"></i>
+            <div data-i18n="Sample">Data Sample</div>
+        </a>
+    </li>
+
+    <li class="menu-item">
+        <a href="{{ route('quote.index') }}" class="menu-link">
+            <i class="menu-icon tf-icons bx bx-file"></i>
+            <div data-i18n="Quote">Data Quote</div>
+        </a>
+    </li>
+
     
 
 
