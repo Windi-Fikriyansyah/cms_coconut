@@ -240,8 +240,6 @@ $existing_journey = array_map(function ($item) {
             break;
         }
     }
-}
-
 
                 if (isset($replace_files[$idx])) {
                     // Delete old one if replaced

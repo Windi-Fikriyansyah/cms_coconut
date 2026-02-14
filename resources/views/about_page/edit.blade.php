@@ -73,8 +73,11 @@
                                     <div class="col-md-4 mb-3 journey-image-item">
                                         <div class="card border p-2 shadow-sm">
                                             <div class="mb-2 text-center">
-                                                <img src="{{ $img->url }}" style="height: 80px; border-radius: 8px;">
-                                                <input type="hidden" name="existing_journey_images[]" value="{{ $img->url }}">
+                                                @php
+                                                    $url = is_string($img) ? $img : ($img->url ?? '');
+                                                @endphp
+                                                <img src="{{ $url }}" style="height: 80px; border-radius: 8px;">
+                                                <input type="hidden" name="existing_journey_images[]" value="{{ $url }}">
                                             </div>
                                             <div class="input-group">
                                                 <input type="file" name="journey_image_replace[]" class="form-control" accept="image/webp">
@@ -187,7 +190,7 @@
                         <label class="form-label">Commitment Image (WebP)</label>
                         @if($about->commitment_image)
                             <div class="mb-2">
-                                <img src="{{ Storage::disk('nextjs')->url(str_replace('/uploads/', '', $about->commitment_image)) }}" style="height: 100px; border-radius: 8px;">
+                                <img src="{{ $about->commitment_image }}" style="height: 100px; border-radius: 8px;">
                             </div>
                         @endif
                         <input type="file" name="commitment_image" class="form-control" accept="image/webp">
@@ -227,8 +230,11 @@
                                 </div>
                                 <div class="mb-2 text-center">
                                     @if(isset($item->image) && $item->image)
-                                        <img src="{{ Storage::disk('nextjs')->url(str_replace('/uploads/', '', $item->image)) }}" style="height: 60px; border-radius: 4px; border: 1px solid #ddd;">
+                                        <img src="{{ $item->image }}" style="height: 60px; border-radius: 4px; border: 1px solid #ddd;">
                                         <input type="hidden" name="process_items[{{ $idx }}][image]" value="{{ $item->image }}">
+                                        @if(isset($item->fileId))
+                                            <input type="hidden" name="process_items[{{ $idx }}][fileId]" value="{{ $item->fileId }}">
+                                        @endif
                                     @endif
                                 </div>
                                 <div class="mb-2">
