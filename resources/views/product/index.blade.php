@@ -38,7 +38,10 @@
             <div class="card-header">
                 <div class="d-flex align-items-center justify-content-between">
                     <h5 class="card-title mb-0">Daftar Produk</h5>
-                    <a href="{{ route('product.create') }}" class="btn btn-primary">Tambah Produk</a>
+                    <div class="btn-group">
+                        <a href="{{ route('product.page') }}" class="btn btn-info me-2">Setting Halaman Produk</a>
+                        <a href="{{ route('product.create') }}" class="btn btn-primary">Tambah Produk</a>
+                    </div>
                 </div>
             </div>
             <div class="card-body">

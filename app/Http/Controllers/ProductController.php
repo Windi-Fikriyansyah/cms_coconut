@@ -338,6 +338,63 @@ class ProductController extends Controller
     }
 
     /**
+     * PAGE SETTINGS — Update products_page metadata
+     */
+    public function pageIndex()
+    {
+        $page = DB::table('products_page')->first();
+        return view('product.page_settings', compact('page'));
+    }
+
+    public function pageUpdate(Request $request)
+    {
+        $request->validate([
+            'hero_title' => 'required|string',
+            'hero_description' => 'required|string',
+            'hero_badge' => 'nullable|string',
+            'hero_image' => 'nullable|image|mimes:webp|max:2048',
+            'cta_description' => 'required|string',
+            'cta_whatsapp' => 'required|string',
+            'cta_email' => 'required|email',
+            'cta_whatsapp_label' => 'required|string',
+            'cta_email_label' => 'required|string',
+        ]);
+
+        try {
+            $page = DB::table('products_page')->first();
+            $data = $request->only([
+                'hero_title', 'hero_description', 'hero_badge',
+                'cta_description', 'cta_whatsapp', 'cta_email',
+                'cta_whatsapp_label', 'cta_email_label'
+            ]);
+
+            if ($request->hasFile('hero_image')) {
+                // Delete old image if exists
+                if ($page && isset($page->hero_image_file_id) && $page->hero_image_file_id) {
+                    $this->imageKit->delete($page->hero_image_file_id);
+                }
+
+                $upload = $this->imageKit->upload($request->file('hero_image'), 'products/page');
+                if ($upload) {
+                    $data['hero_image'] = $upload->url;
+                    $data['hero_image_file_id'] = $upload->fileId;
+                }
+            }
+
+            if ($page) {
+                DB::table('products_page')->where('id', $page->id)->update($data);
+            } else {
+                DB::table('products_page')->insert($data);
+            }
+
+            return redirect()->route('product.index')->with('success', 'Product page settings updated successfully');
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return back()->with('error', 'Failed to update product page settings: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * DESTROY
      */
     public function destroy($id)
