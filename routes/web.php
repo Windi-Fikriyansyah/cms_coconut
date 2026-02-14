@@ -116,6 +116,26 @@ Route::prefix('quote')->name('quote.')->group(function () {
     Route::delete('/delete/{id}', [App\Http\Controllers\QuoteController::class, 'destroy'])->name('destroy');
 });
 
+Route::prefix('testimoni')->name('testimoni.')->group(function () {
+    Route::get('/', [App\Http\Controllers\TestimoniController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\TestimoniController::class, 'create'])->name('create');
+    Route::post('/store', [App\Http\Controllers\TestimoniController::class, 'store'])->name('store');
+    Route::get('/{id}/edit', [App\Http\Controllers\TestimoniController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [App\Http\Controllers\TestimoniController::class, 'update'])->name('update');
+    Route::delete('/delete/{id}', [App\Http\Controllers\TestimoniController::class, 'destroy'])->name('destroy');
+    Route::post('/metadata', [App\Http\Controllers\TestimoniController::class, 'updateMetadata'])->name('metadata.update');
+});
+
+Route::prefix('team')->name('team.')->group(function () {
+    Route::get('/', [App\Http\Controllers\TeamController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\TeamController::class, 'create'])->name('create');
+    Route::post('/store', [App\Http\Controllers\TeamController::class, 'store'])->name('store');
+    Route::get('/{id}/edit', [App\Http\Controllers\TeamController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [App\Http\Controllers\TeamController::class, 'update'])->name('update');
+    Route::delete('/delete/{id}', [App\Http\Controllers\TeamController::class, 'destroy'])->name('destroy');
+    Route::post('/metadata', [App\Http\Controllers\TeamController::class, 'updateMetadata'])->name('metadata.update');
+});
+
 Route::prefix('footer')->name('footer.')->group(function () {
 
     Route::get('/', [App\Http\Controllers\FooterController::class,'index'])->name('index');

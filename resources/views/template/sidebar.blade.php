@@ -82,6 +82,20 @@
             </li>
 
             <li class="menu-item">
+                <a href="{{ route('testimoni.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-chat"></i>
+                    <div data-i18n="Testimoni">Testimoni</div>
+                </a>
+            </li>
+
+             <li class="menu-item">
+                <a href="{{ route('team.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-group"></i>
+                    <div data-i18n="team">Our Team</div>
+                </a>
+            </li>
+
+            <li class="menu-item">
                 <a href="{{ route('footer.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-dock-bottom"></i>
                     <div data-i18n="Footer Section">Footer Section</div>
