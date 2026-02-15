@@ -40,7 +40,6 @@
                                 <th>No</th>
                                 <th>Name</th>
                                 <th>Location</th>
-                                <th>Products</th>
                                 <th>Terms</th>
                                 <th>Message</th>
                                 <th>Date</th>
@@ -90,7 +89,6 @@
                             return `${data}, ${row.town}`;
                         }
                     },
-                    { data: 'products', name: 'products' },
                     { 
                         data: 'sale_term', 
                         name: 'sale_term',
@@ -108,7 +106,7 @@
                     { data: 'created_at', name: 'created_at' },
                     { data: 'action', orderable: false, searchable: false }
                 ],
-                order: [[6, 'desc']]
+                order: [[5, 'desc']]
             });
 
             $(document).on('click', '.delete-btn', function() {

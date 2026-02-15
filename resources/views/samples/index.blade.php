@@ -41,7 +41,6 @@
                                 <th>Name</th>
                                 <th>Company</th>
                                 <th>Country/Town</th>
-                                <th>Products</th>
                                 <th>Qty</th>
                                 <th>Payment</th>
                                 <th>Date</th>
@@ -92,13 +91,12 @@
                             return `${data}, ${row.town}`;
                         }
                     },
-                    { data: 'products', name: 'products' },
                     { data: 'quantity', name: 'quantity' },
                     { data: 'payment_method', name: 'payment_method' },
                     { data: 'created_at', name: 'created_at' },
                     { data: 'action', orderable: false, searchable: false }
                 ],
-                order: [[7, 'desc']]
+                order: [[6, 'desc']]
             });
 
             $(document).on('click', '.delete-btn', function() {
