@@ -61,7 +61,16 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-bold">Incoterms</label>
-                        <input type="text" class="form-control" value="{{ $quote->incoterms ?? '-' }}" disabled>
+                        <input type="text" class="form-control" value="{{ $quote->sale_term ?? '-' }}" disabled>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Currency</label>
+                        <input type="text" class="form-control" value="{{ $quote->currency ?? '-' }}" disabled>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Payment Term</label>
+                        <input type="text" class="form-control" value="{{ $quote->payment_term ?? '-' }}" disabled>
                     </div>
                 </div>
 
