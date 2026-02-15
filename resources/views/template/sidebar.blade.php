@@ -96,6 +96,13 @@
             </li>
 
             <li class="menu-item">
+                <a href="{{ route('company-stats.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-group"></i>
+                    <div data-i18n="company-stats">Company Stats</div>
+                </a>
+            </li>
+
+            <li class="menu-item">
                 <a href="{{ route('footer.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-dock-bottom"></i>
                     <div data-i18n="Footer Section">Footer Section</div>

@@ -141,6 +141,15 @@ Route::prefix('team')->name('team.')->group(function () {
     Route::post('/metadata', [App\Http\Controllers\TeamController::class, 'updateMetadata'])->name('metadata.update');
 });
 
+Route::prefix('company-stats')->name('company-stats.')->group(function(){
+    Route::get('/', [App\Http\Controllers\CompanyStatsController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\CompanyStatsController::class, 'create'])->name('create');
+    Route::post('/store', [App\Http\Controllers\CompanyStatsController::class, 'store'])->name('store');
+    Route::get('/edit/{id}', [App\Http\Controllers\CompanyStatsController::class, 'edit'])->name('edit');
+    Route::post('/update/{id}', [App\Http\Controllers\CompanyStatsController::class, 'update'])->name('update');
+    Route::delete('/destroy/{id}', [App\Http\Controllers\CompanyStatsController::class, 'destroy'])->name('destroy');
+});
+
 Route::prefix('footer')->name('footer.')->group(function () {
 
     Route::get('/', [App\Http\Controllers\FooterController::class,'index'])->name('index');
